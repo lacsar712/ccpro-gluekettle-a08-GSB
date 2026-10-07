@@ -1,7 +1,9 @@
+from datetime import date
+
 from sqlmodel import select
 
 from app.db import get_session
-from app.models import CookLog, Kettle, User, Workshop
+from app.models import CookLog, GateCert, Kettle, User, Workshop
 from app.security import hash_password
 
 
@@ -39,4 +41,12 @@ def seed_demo() -> None:
             session.flush()
             if peak is not None:
                 session.add(CookLog(kettle_id=kettle.id, peak_temp_c=peak, operator="worker"))
+        session.add(
+            GateCert(
+                workshop_id=shop.id,
+                patrol_date=date.today(),
+                gate=GateCert.GATE_CLOSED,
+                patroller="admin",
+            )
+        )
         session.commit()

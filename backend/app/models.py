@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import ClassVar, Optional
 
+from sqlalchemy import Index, text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -45,3 +46,30 @@ class CookLog(SQLModel, table=True):
     peak_temp_c: float
     operator: str = ""
     kettle: Optional[Kettle] = Relationship(back_populates="cooks")
+
+
+class GateCert(SQLModel, table=True):
+    """闸板证：同坊同日最多一张有效证（未作废），由部分唯一索引兜底。"""
+
+    __tablename__ = "gatecert"
+    __table_args__ = (
+        Index(
+            "uq_gatecert_one_valid_per_day",
+            "workshop_id",
+            "patrol_date",
+            unique=True,
+            postgresql_where=text("voided_at IS NULL"),
+            sqlite_where=text("voided_at IS NULL"),
+        ),
+    )
+
+    GATE_OPEN: ClassVar[str] = "open"
+    GATE_CLOSED: ClassVar[str] = "closed"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workshop_id: int = Field(foreign_key="workshop.id")
+    patrol_date: date
+    gate: str = GATE_CLOSED
+    patroller: str = ""
+    created_at: datetime = Field(default_factory=utcnow)
+    voided_at: Optional[datetime] = None
